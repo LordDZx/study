@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول الدراسة المتقدم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        body {
+            font-family: 'Cairo', 'Roboto', sans-serif;
+        }
+        [dir="ltr"] body {
+            font-family: 'Roboto', 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen transition-all duration-300" x-data="app()" :class="{ 'dark': darkMode, 'bg-gray-900': darkMode }">
+    <nav class="bg-white dark:bg-gray-800 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-semibold text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'جدول الدراسة المتقدم' : 'Advanced Study Planner'"></span>
+                </div>
+                <div class="flex items-center">
+                    <button @click="toggleDarkMode" class="p-2 rounded-md text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                        <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'" class="text-xl"></i>
+                    </button>
+                    <select x-model="lang" @change="changeLang" class="ml-4 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-md px-2 py-1">
+                        <option value="ar">العربية</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'إضافة محاضرة جديدة' : 'Add New Lecture'"></h2>
+            <form @submit.prevent="addLecture" class="space-y-4">
+                <input type="text" x-model="newLecture.name" :placeholder="lang === 'ar' ? 'اسم المحاضرة' : 'Lecture Name'" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" required>
+                <input type="number" x-model="newLecture.duration" :placeholder="lang === 'ar' ? 'مدة المحاضرة (بالدقائق)' : 'Lecture Duration (minutes)'" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" required>
+                <input type="number" x-model="newLecture.count" :placeholder="lang === 'ar' ? 'عدد المحاضرات' : 'Number of Lectures'" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" required>
+                <select x-model="newLecture.type" class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white" required>
+                    <option value="" x-text="lang === 'ar' ? 'اختر نوع المحاضرة' : 'Select Lecture Type'"></option>
+                    <option value="arabic" x-text="lang === 'ar' ? 'عربي' : 'Arabic'"></option>
+                    <option value="physics" x-text="lang === 'ar' ? 'فيزياء' : 'Physics'"></option>
+                    <option value="chemistry" x-text="lang === 'ar' ? 'كيمياء' : 'Chemistry'"></option>
+                    <option value="biology" x-text="lang === 'ar' ? 'أحياء' : 'Biology'"></option>
+                    <option value="french" x-text="lang === 'ar' ? 'فرنساوي' : 'French'"></option>
+                    <option value="math" x-text="lang === 'ar' ? 'رياضيات' : 'Math'"></option>
+                    <option value="english" x-text="lang === 'ar' ? 'إنجليزي' : 'English'"></option>
+                </select>
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300" x-text="lang === 'ar' ? 'إضافة المحاضرة' : 'Add Lecture'"></button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'المحاضرات المضافة' : 'Added Lectures'"></h2>
+                <ul class="space-y-2">
+                    <template x-for="(lecture, index) in lectures" :key="index">
+                        <li class="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
+                            <span class="text-gray-800 dark:text-white" x-text="`${lecture.name} - ${lecture.duration} ${lang === 'ar' ? 'دقيقة' : 'min'} - ${lecture.count} ${lang === 'ar' ? 'مرات' : 'times'} - ${getTranslatedType(lecture.type)}`"></span>
+                            <button @click="removeLecture(index)" class="text-red-500 hover:text-red-700" x-text="lang === 'ar' ? 'حذف' : 'Delete'"></button>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'الجدول الدراسي' : 'Study Schedule'"></h2>
+                <button @click="generateSchedule" class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition duration-300 mb-4" x-text="lang === 'ar' ? 'إنشاء جدول عشوائي' : 'Generate Random Schedule'"></button>
+                <div id="calendar"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'إحصائيات الدراسة' : 'Study Statistics'"></h2>
+                <div id="studyStats" class="grid grid-cols-2 gap-4"></div>
+                <canvas id="subjectsChart" class="mt-4"></canvas>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'نصيحة اليوم' : 'Tip of the Day'"></h2>
+                <p id="dailyTip" class="text-gray-700 dark:text-gray-300 italic"></p>
+            </div>
+        </div>
+
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+            <button @click="saveSettings" class="bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition duration-300" x-text="lang === 'ar' ? 'حفظ الإعدادات' : 'Save Settings'"></button>
+            <label for="loadSettings" class="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition duration-300 cursor-pointer" x-text="lang === 'ar' ? 'تحميل الإعدادات' : 'Load Settings'">
+                <input type="file" id="loadSettings" @change="loadSettings" accept=".json" class="hidden">
+            </label>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-gray-500 dark:text-gray-400">
+        <p x-text="lang === 'ar' ? 'تم تطوير هذا الموقع بواسطة Ahmed.R' : 'Developed by Ahmed.R'"></p>
+        <p>
+            <span x-text="lang === 'ar' ? 'للتواصل:' : 'Contact:'"></span>
+            <a href="https://wa.me/201098662418" class="text-blue-500 hover:underline">WhatsApp</a>
+        </p>
+    </footer>
+
+    <script>
+        function app() {
+            return {
+                darkMode: false,
+                lang: 'ar',
+                lectures: [],
+                schedule: [],
+                calendar: null,
+                subjectsChart: null,
+                newLecture: {
+                    name: '',
+                    duration: '',
+                    count: '',
+                    type: ''
+                },
+
+                init() {
+                    this.loadLectures();
+                    this.setDailyTip();
+                    this.updateStudyStats();
+                    this.updateSubjectsChart();
+                    this.darkMode = JSON.parse(localStorage.getItem('darkMode')) || false;
+                    this.lang = localStorage.getItem('lang') || 'ar';
+                    this.setDirection();
+                },
+
+                toggleDarkMode() {
+                    this.darkMode = !this.darkMode;
+                    localStorage.setItem('darkMode', JSON.stringify(this.darkMode));
+                },
+
+                changeLang() {
+                    localStorage.setItem('lang', this.lang);
+                    this.setDirection();
+                    this.setDailyTip();
+                    this.updateStudyStats();
+                    this.updateSubjectsChart();
+                    if (this.calendar) {
+                        this.calendar.destroy();
+                        this.updateCalendar();
+                    }
+                },
+
+                setDirection() {
+                    document.documentElement.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
+                    document.documentElement.lang = this.lang;
+                },
+
+                addLecture() {
+                    this.lectures.push({...this.newLecture});
+                    this.saveLectures();
+                    this.updateStudyStats();
+                    this.updateSubjectsChart();
+                    this.newLecture = {name: '', duration: '', count: '', type: ''};
+                },
+
+                removeLecture(index) {
+                    this.lectures.splice(index, 1);
+                    this.saveLectures();
+                    this.updateStudyStats();
+                    this.updateSubjectsChart();
+                },
+
+                generateSchedule() {
+                    const shuffledLectures = [...this.lectures].sort(() => 0.5 - Math.random());
+                    this.schedule = [];
+                    const startDate = new Date();
+                    startDate.setHours(0, 0, 0, 0);
+                    
+                    for (let i = 0; i < 30; i++) {
+                        const currentDate = new Date(startDate);
+                        currentDate.setDate(startDate.getDate() + i);
+                        const dayLectures = shuffledLectures
+                            .filter(() => Math.random() < 0.7)
+                            .map(lecture => ({ ...lecture, completed: false }));
+                        
+                        if (dayLectures.length > 0) {
+                            this.schedule.push({
+                                date: currentDate,
+                                lectures: dayLectures
+                            });
+                        }
+                    }
+                    
+                    this.updateCalendar();
+                    this.saveLectures();
+                },
+
+                updateCalendar() {
+                    if (this.calendar) {
+                        this.calendar.destroy();
+                    }
+
+                    this.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+                        initialView: 'dayGridMonth',
+                        events: this.schedule.flatMap(day => 
+                            day.lectures.map(lecture => ({
+                                title: `${lecture.name} (${lecture.duration} ${this.lang === 'ar' ? 'دقيقة' : 'min'})`,
+                                start: day.date,
+                                allDay: true,
+                                backgroundColor: this.getColorForLectureType(lecture.type),
+                                extendedProps: {
+                                    
+                                    lectureId: `${day.date.toISOString()}-${lecture.name}`,
+                                    completed: lecture.completed
+                                }
+                            }))
+                        ),
+                        eventClick: (info) => {
+                            const lectureId = info.event.extendedProps.lectureId;
+                            this.toggleLectureCompletion(lectureId);
+                            info.event.remove();
+                            const updatedEvent = { ...info.event.toPlainObject(), backgroundColor: info.event.extendedProps.completed ? '#10B981' : this.getColorForLectureType(info.event._def.extendedProps.type) };
+                            this.calendar.addEvent(updatedEvent);
+                        },
+                        eventContent: (arg) => {
+                            const completedIcon = arg.event.extendedProps.completed ? '<span class="ml-1">✅</span>' : '';
+                            return { html: `<div class="fc-content">${arg.event.title}${completedIcon}</div>` };
+                        }
+                    });
+
+                    this.calendar.render();
+                },
+
+                toggleLectureCompletion(lectureId) {
+                    const [dateString, lectureName] = lectureId.split('-');
+                    const date = new Date(dateString);
+                    const daySchedule = this.schedule.find(day => day.date.toISOString() === date.toISOString());
+                    if (daySchedule) {
+                        const lecture = daySchedule.lectures.find(l => l.name === lectureName);
+                        if (lecture) {
+                            lecture.completed = !lecture.completed;
+                            this.saveLectures();
+                            this.updateStudyStats();
+                        }
+                    }
+                },
+
+                updateStudyStats() {
+                    const totalLectures = this.lectures.reduce((sum, lecture) => sum + parseInt(lecture.count), 0);
+                    const totalDuration = this.lectures.reduce((sum, lecture) => sum + (parseInt(lecture.duration) * parseInt(lecture.count)), 0);
+                    const uniqueSubjects = new Set(this.lectures.map(lecture => lecture.type)).size;
+                    const completedLectures = this.schedule.flatMap(day => day.lectures).filter(lecture => lecture.completed).length;
+                    const totalScheduledLectures = this.schedule.flatMap(day => day.lectures).length;
+
+                    const statsContainer = document.getElementById('studyStats');
+                    statsContainer.innerHTML = `
+                        <div class="bg-blue-100 dark:bg-blue-900 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-blue-800 dark:text-blue-200">${totalLectures}</p>
+                            <p class="text-sm text-blue-600 dark:text-blue-300">${this.lang === 'ar' ? 'إجمالي المحاضرات' : 'Total Lectures'}</p>
+                        </div>
+                        <div class="bg-green-100 dark:bg-green-900 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-green-800 dark:text-green-200">${Math.round(totalDuration / 60)} ${this.lang === 'ar' ? 'ساعة' : 'hours'}</p>
+                            <p class="text-sm text-green-600 dark:text-green-300">${this.lang === 'ar' ? 'إجمالي وقت الدراسة' : 'Total Study Time'}</p>
+                        </div>
+                        <div class="bg-purple-100 dark:bg-purple-900 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-purple-800 dark:text-purple-200">${uniqueSubjects}</p>
+                            <p class="text-sm text-purple-600 dark:text-purple-300">${this.lang === 'ar' ? 'عدد المواد الفريدة' : 'Unique Subjects'}</p>
+                        </div>
+                        <div class="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg text-center">
+                            <p class="text-2xl font-bold text-yellow-800 dark:text-yellow-200">${completedLectures}/${totalScheduledLectures}</p>
+                            <p class="text-sm text-yellow-600 dark:text-yellow-300">${this.lang === 'ar' ? 'المحاضرات المكتملة' : 'Completed Lectures'}</p>
+                        </div>
+                    `;
+                },
+
+                updateSubjectsChart() {
+                    const ctx = document.getElementById('subjectsChart').getContext('2d');
+                    const subjectCounts = {};
+                    this.lectures.forEach(lecture => {
+                        subjectCounts[lecture.type] = (subjectCounts[lecture.type] || 0) + parseInt(lecture.count);
+                    });
+
+                    const data = {
+                        labels: Object.keys(subjectCounts).map(this.getTranslatedType),
+                        datasets: [{
+                            data: Object.values(subjectCounts),
+                            backgroundColor: Object.keys(subjectCounts).map(this.getColorForLectureType),
+                        }]
+                    };
+
+                    if (this.subjectsChart) {
+                        this.subjectsChart.destroy();
+                    }
+
+                    this.subjectsChart = new Chart(ctx, {
+                        type: 'pie',
+                        data: data,
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: true,
+                                    text: this.lang === 'ar' ? 'توزيع المواد الدراسية' : 'Subject Distribution'
+                                }
+                            }
+                        }
+                    });
+                },
+
+                getTranslatedType(type) {
+                    const translations = {
+                        'arabic': { ar: 'عربي', en: 'Arabic' },
+                        'physics': { ar: 'فيزياء', en: 'Physics' },
+                        'chemistry': { ar: 'كيمياء', en: 'Chemistry' },
+                        'biology': { ar: 'أحياء', en: 'Biology' },
+                        'french': { ar: 'فرنساوي', en: 'French' },
+                        'math': { ar: 'رياضيات', en: 'Math' },
+                        'english': { ar: 'إنجليزي', en: 'English' }
+                    };
+                    return translations[type][this.lang];
+                },
+
+                getColorForLectureType(type) {
+                    const colors = {
+                        'arabic': '#EF4444',
+                        'physics': '#3B82F6',
+                        'chemistry': '#10B981',
+                        'biology': '#F59E0B',
+                        'french': '#6366F1',
+                        'math': '#8B5CF6',
+                        'english': '#EC4899'
+                    };
+                    return colors[type] || '#6B7280';
+                },
+
+                setDailyTip() {
+                    const tips = {
+                        ar: [
+                            "خصص وقتًا للراحة بين جلسات الدراسة لتحسين التركيز.",
+                            "استخدم تقنية بومودورو: 25 دقيقة دراسة، 5 دقائق راحة.",
+                            "راجع ملاحظاتك بانتظام لترسيخ المعلومات في ذاكرتك.",
+                            "حاول شرح المفاهيم لزملائك لتعزيز فهمك.",
+                            "ابدأ بالمواد الأصعب عندما تكون طاقتك في أعلى مستوياتها.",
+                            "استخدم الخرائط الذهنية لتنظيم أفكارك ومراجعة المواد.",
+                            "تناول وجبات صحية ومتوازنة للحفاظ على تركيزك وطاقتك.",
+                            "مارس التمارين الرياضية بانتظام لتحسين الدورة الدموية وزيادة التركيز.",
+                            "اشرب الكثير من الماء أثناء الدراسة للحفاظ على نشاطك الذهني.",
+                            "حدد أهدافًا صغيرة وقابلة للتحقيق لكل جلسة دراسية."
+                        ],
+                        en: [
+                            "Take breaks between study sessions to improve focus.",
+                            "Use the Pomodoro technique: 25 minutes of study, 5 minutes of rest.",
+                            "Review your notes regularly to reinforce information in your memory.",
+                            "Try explaining concepts to your peers to enhance your understanding.",
+                            "Start with the most difficult subjects when your energy is at its peak.",
+                            "Use mind maps to organize your thoughts and review materials.",
+                            "Eat healthy, balanced meals to maintain your focus and energy.",
+                            "Exercise regularly to improve blood circulation and increase concentration.",
+                            "Drink plenty of water while studying to maintain mental alertness.",
+                            "Set small, achievable goals for each study session."
+                        ]
+                    };
+                    const dailyTip = document.getElementById('dailyTip');
+                    dailyTip.textContent = tips[this.lang][Math.floor(Math.random() * tips[this.lang].length)];
+                },
+
+                saveSettings() {
+                    const data = JSON.stringify({ lectures: this.lectures, schedule: this.schedule });
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'study_schedule_settings.json';
+                    a.click();
+                },
+
+                loadSettings(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const content = e.target.result;
+                            const data = JSON.parse(content);
+                            this.lectures = data.lectures || [];
+                            this.schedule = data.schedule || [];
+                            this.schedule.forEach(day => day.date = new Date(day.date));
+                            this.saveLectures();
+                            this.updateStudyStats();
+                            this.updateSubjectsChart();
+                            this.updateCalendar();
+                        };
+                        reader.readAsText(file);
+                    }
+                },
+
+                saveLectures() {
+                    localStorage.setItem('lectures', JSON.stringify(this.lectures));
+                    localStorage.setItem('schedule', JSON.stringify(this.schedule));
+                },
+
+                loadLectures() {
+                    const savedLectures = localStorage.getItem('lectures');
+                    const savedSchedule = localStorage.getItem('schedule');
+                    if (savedLectures) {
+                        this.lectures = JSON.parse(savedLectures);
+                    }
+                    if (savedSchedule) {
+                        this.schedule = JSON.parse(savedSchedule);
+                        this.schedule.forEach(day => day.date = new Date(day.date));
+                    }
+                    this.updateCalendar();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
