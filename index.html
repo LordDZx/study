@@ -3,22 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جدول متابعه دراسيه</title>
+    <title>جدول متابعة دراسية</title>
     <link rel="icon" href="title-ico.png" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.2/main.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Roboto:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
         body {
-            font-family: 'Cairo', 'Roboto', sans-serif;
-        }
-        [dir="ltr"] body {
-            font-family: 'Roboto', 'Cairo', sans-serif;
+            font-family: 'Cairo', sans-serif;
         }
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
@@ -35,7 +31,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen transition-all duration-300" x-data="app()" :class="{ 'dark': darkMode, 'bg-gray-900': darkMode }">
+<body class="bg-gray-100 min-h-screen transition-all duration-300" x-data="app()" :class="{ 'dark': darkMode }">
     <nav class="bg-white dark:bg-gray-800 shadow-lg fixed top-0 left-0 right-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -50,25 +46,12 @@
                         <option value="ar">العربية</option>
                         <option value="en">English</option>
                     </select>
-                    <a href="https://wa.me/201098662418" target="_blank" class="text-green-500 hover:text-green-600">
-                        <i class="fab fa-whatsapp text-2xl"></i>
-                    </a>
                 </div>
             </div>
         </div>
     </nav>
 
     <div class="container mx-auto px-4 py-8 mt-20">
-        <div x-show="showTip" class="bg-yellow-100 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-8">
-            <div class="flex justify-between items-center">
-                <p class="font-bold" x-text="lang === 'ar' ? 'نصيحة اليوم' : 'Tip of the Day'"></p>
-                <button @click="showTip = false" class="text-yellow-700 dark:text-yellow-300 hover:text-yellow-900 dark:hover:text-yellow-100">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <p x-text="dailyTip"></p>
-        </div>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'إضافة محاضرة جديدة' : 'Add New Lecture'"></h2>
@@ -105,7 +88,7 @@
             </div>
         </div>
 
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'إنشاء الجدول الدراسي' : 'Generate Study Schedule'"></h2>
                 <div class="mb-4">
@@ -125,13 +108,24 @@
             </div>
         </div>
 
+        <div class="mt-8">
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'جدول المحاضرات' : 'Lecture Schedule'"></h2>
+                <div id="scheduleTable" class="overflow-x-auto"></div>
+            </div>
+        </div>
+
         <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
                 <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white" x-text="lang === 'ar' ? 'إحصائيات الدراسة' : 'Study Statistics'"></h2>
-                <div id="studyStats" class="grid grid-cols-2 gap-4"></div>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <canvas id="subjectsChart" class="w-full"></canvas>
-                    <canvas id="progressChart" class="w-full"></canvas>
+                <div id="studyStats" class="grid grid-cols-2 gap-4 mb-4"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <canvas id="subjectsChart"></canvas>
+                    </div>
+                    <div>
+                        <canvas id="progressChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -143,21 +137,13 @@
 
         <div class="mt-8 flex flex-wrap justify-center gap-4">
             <button @click="saveSettings" class="bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 transition duration-300" x-text="lang === 'ar' ? 'حفظ الإعدادات' : 'Save Settings'"></button>
-            <label for="loadSettings" class="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition duration-300 cursor-pointer" x-text="lang === 'ar' ? 'تحميل الإعدادات' : 'Load Settings'">
+            <label for="loadSettings" class="bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 transition duration-300 cursor-pointer">
+                <span x-text="lang === 'ar' ? 'تحميل الإعدادات' : 'Load Settings'"></span>
                 <input type="file" id="loadSettings" @change="loadSettings" accept=".json" class="hidden">
             </label>
-            <button @click="downloadSchedule" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300" x-text="lang === 
-'ar' ? 'تحميل الجدول' : 'Download Schedule'"></button>
+            <button @click="downloadSchedule" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300" x-text="lang === 'ar' ? 'تحميل الجدول' : 'Download Schedule'"></button>
         </div>
     </div>
-
-    <footer class="mt-12 text-center text-gray-500 dark:text-gray-400 pb-8">
-        <p x-text="lang === 'ar' ? 'تم تطوير هذا الموقع بواسطة Ahmed.R' : 'Developed by Ahmed.R'"></p>
-        <p>
-            <span x-text="lang === 'ar' ? 'للتواصل:' : 'Contact:'"></span>
-            <a href="https://wa.me/201098662418" class="text-green-500 hover:underline">WhatsApp</a>
-        </p>
-    </footer>
 
     <script>
         function app() {
@@ -177,63 +163,54 @@
                 },
                 studyDays: 7,
                 dailyStudyHours: 4,
-                showTip: true,
-                dailyTip: '',
 
                 init() {
-                    this.loadFromCookies();
-                    this.setDailyTip();
+                    this.loadFromLocalStorage();
                     this.updateStudyStats();
                     this.updateSubjectsChart();
                     this.updateProgressChart();
                     this.updateTodayLectures();
-                    this.setDirection();
                     this.updateCalendar();
+                    this.updateScheduleTable();
                 },
 
                 toggleDarkMode() {
                     this.darkMode = !this.darkMode;
-                    this.saveToCookies();
+                    this.saveToLocalStorage();
                 },
 
                 changeLang() {
-                    this.saveToCookies();
-                    this.setDirection();
-                    this.setDailyTip();
+                    document.documentElement.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
+                    document.documentElement.lang = this.lang;
+                    this.saveToLocalStorage();
                     this.updateStudyStats();
                     this.updateSubjectsChart();
                     this.updateProgressChart();
                     this.updateTodayLectures();
-                    if (this.calendar) {
-                        this.calendar.destroy();
-                        this.updateCalendar();
-                    }
-                },
-
-                setDirection() {
-                    document.documentElement.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
-                    document.documentElement.lang = this.lang;
+                    this.updateScheduleTable();
+                    this.updateCalendar();
                 },
 
                 addLecture() {
                     this.lectures.push({...this.newLecture});
-                    this.saveToCookies();
+                    this.saveToLocalStorage();
                     this.updateStudyStats();
                     this.updateSubjectsChart();
-                    this.updateProgressChart();
                     this.newLecture = {name: '', duration: '', count: '', type: ''};
                 },
 
                 removeLecture(index) {
                     this.lectures.splice(index, 1);
-                    this.saveToCookies();
+                    this.saveToLocalStorage();
                     this.updateStudyStats();
                     this.updateSubjectsChart();
-                    this.updateProgressChart();
                 },
 
                 generateSchedule() {
-                    const shuffledLectures = [...this.lectures].sort(() => 0.5 - Math.random());
+                    const shuffledLectures = this.lectures.flatMap(lecture => 
+                        Array(parseInt(lecture.count)).fill({...lecture, completed: false})
+                    ).sort(() => 0.5 - Math.random());
+
                     this.schedule = [];
                     const startDate = new Date();
                     startDate.setHours(0, 0, 0, 0);
@@ -241,14 +218,16 @@
                     for (let i = 0; i < this.studyDays; i++) {
                         const currentDate = new Date(startDate);
                         currentDate.setDate(startDate.getDate() + i);
-                        let remainingHours = this.dailyStudyHours;
+                        let remainingMinutes = this.dailyStudyHours * 60;
                         const dayLectures = [];
                         
-                        while (remainingHours > 0 && shuffledLectures.length > 0) {
+                        while (remainingMinutes > 0 && shuffledLectures.length > 0) {
                             const lecture = shuffledLectures.shift();
-                            if (lecture && lecture.duration / 60 <= remainingHours) {
-                                dayLectures.push({ ...lecture, completed: false });
-                                remainingHours -= lecture.duration / 60;
+                            if (lecture && parseInt(lecture.duration) <= remainingMinutes) {
+                                dayLectures.push(lecture);
+                                remainingMinutes -= parseInt(lecture.duration);
+                            } else {
+                                break;
                             }
                         }
                         
@@ -260,9 +239,12 @@
                         }
                     }
                     
+                    this.saveToLocalStorage();
                     this.updateCalendar();
-                    this.saveToCookies();
+                    this.updateScheduleTable();
                     this.updateTodayLectures();
+                    this.updateStudyStats();
+                    this.updateProgressChart();
                 },
 
                 updateCalendar() {
@@ -285,16 +267,18 @@
                             }))
                         ),
                         eventClick: (info) => {
-                            const lectureId = info.event.extendedProps.lectureId;
-                            this.toggleLectureCompletion(lectureId);
-                            info.event.remove();
-                            const updatedEvent = { ...info.event.toPlainObject(), backgroundColor: info.event.extendedProps.completed ? '#10B981' : this.getColorForLectureType(info.event._def.extendedProps.type) };
-                            this.calendar.addEvent(updatedEvent);
+                            this.toggleLectureCompletion(info.event.extendedProps.lectureId);
                         },
                         eventContent: (arg) => {
-                            const completedIcon = arg.event.extendedProps.completed ? '<span class="ml-1">✅</span>' : '';
-                            return { html: `<div class="fc-content">${arg.event.title}${completedIcon}</div>` };
-                        }
+                            const completedIcon = arg.event.extendedProps.completed ? '✅ ' : '';
+                            return { html: `<div class="fc-content">${completedIcon}${arg.event.title}</div>` };
+                        },
+                        headerToolbar: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                        },
+                        locale: this.lang
                     });
 
                     this.calendar.render();
@@ -303,15 +287,17 @@
                 toggleLectureCompletion(lectureId) {
                     const [dateString, lectureName] = lectureId.split('-');
                     const date = new Date(dateString);
-                    const daySchedule = this.schedule.find(day => day.date.toISOString() === date.toISOString());
+                    const daySchedule = this.schedule.find(day => day.date.toDateString() === date.toDateString());
                     if (daySchedule) {
                         const lecture = daySchedule.lectures.find(l => l.name === lectureName);
                         if (lecture) {
                             lecture.completed = !lecture.completed;
-                            this.saveToCookies();
+                            this.saveToLocalStorage();
                             this.updateStudyStats();
                             this.updateProgressChart();
                             this.updateTodayLectures();
+                            this.updateScheduleTable();
+                            this.updateCalendar();
                         }
                     }
                 },
@@ -351,21 +337,19 @@
                         subjectCounts[lecture.type] = (subjectCounts[lecture.type] || 0) + parseInt(lecture.count);
                     });
 
-                    const data = {
-                        labels: Object.keys(subjectCounts).map(this.getTranslatedType),
-                        datasets: [{
-                            data: Object.values(subjectCounts),
-                            backgroundColor: Object.keys(subjectCounts).map(this.getColorForLectureType),
-                        }]
-                    };
-
                     if (this.subjectsChart) {
                         this.subjectsChart.destroy();
                     }
 
                     this.subjectsChart = new Chart(ctx, {
                         type: 'pie',
-                        data: data,
+                        data: {
+                            labels: Object.keys(subjectCounts).map(type => this.getTranslatedType(type)),
+                            datasets: [{
+                                data: Object.values(subjectCounts),
+                                backgroundColor: Object.keys(subjectCounts).map(this.getColorForLectureType),
+                            }]
+                        },
                         options: {
                             responsive: true,
                             plugins: {
@@ -387,24 +371,22 @@
                     const totalLectures = this.schedule.flatMap(day => day.lectures).length;
                     const remainingLectures = totalLectures - completedLectures;
 
-                    const data = {
-                        labels: [
-                            this.lang === 'ar' ? 'المحاضرات المكتملة' : 'Completed Lectures',
-                            this.lang === 'ar' ? 'المحاضرات المتبقية' : 'Remaining Lectures'
-                        ],
-                        datasets: [{
-                            data: [completedLectures, remainingLectures],
-                            backgroundColor: ['#10B981', '#3B82F6'],
-                        }]
-                    };
-
                     if (this.progressChart) {
                         this.progressChart.destroy();
                     }
 
                     this.progressChart = new Chart(ctx, {
                         type: 'doughnut',
-                        data: data,
+                        data: {
+                            labels: [
+                                this.lang === 'ar' ? 'المحاضرات المكتملة' : 'Completed Lectures',
+                                this.lang === 'ar' ? 'المحاضرات المتبقية' : 'Remaining Lectures'
+                            ],
+                            datasets: [{
+                                data: [completedLectures, remainingLectures],
+                                backgroundColor: ['#10B981', '#3B82F6'],
+                            }]
+                        },
                         options: {
                             responsive: true,
                             plugins: {
@@ -429,7 +411,7 @@
                         todayLecturesContainer.innerHTML = todaySchedule.lectures.map((lecture, index) => `
                             <li class="flex justify-between items-center bg-gray-100 dark:bg-gray-700 p-3 rounded-md">
                                 <span class="text-gray-800 dark:text-white">${lecture.name} (${lecture.duration} ${this.lang === 'ar' ? 'دقيقة' : 'min'})</span>
-                                <button onclick="app().toggleLectureCompletion('${todaySchedule.date.toISOString()}-${lecture.name}')" 
+                                <button @click="toggleLectureCompletion('${todaySchedule.date.toISOString()}-${lecture.name}')" 
                                         class="${lecture.completed ? 'bg-green-500' : 'bg-blue-500'} text-white py-1 px-3 rounded-md hover:opacity-80 transition duration-300">
                                     ${lecture.completed ? (this.lang === 'ar' ? 'تم الإكمال' : 'Completed') : (this.lang === 'ar' ? 'إكمال' : 'Complete')}
                                 </button>
@@ -440,13 +422,56 @@
                     }
                 },
 
+                updateScheduleTable() {
+                    const tableContainer = document.getElementById('scheduleTable');
+                    let tableHTML = `
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">${this.lang === 'ar' ? 'اليوم' : 'Day'}</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">${this.lang === 'ar' ? 'التاريخ' : 'Date'}</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">${this.lang === 'ar' ? 'المحاضرات' : 'Lectures'}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
+                    `;
+
+                    this.schedule.forEach((day, index) => {
+                        tableHTML += `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${this.getDayName(day.date)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">${day.date.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US')}</td>
+                                <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                    ${day.lectures.map(lecture => `
+                                        <div class="${lecture.completed ? 'line-through text-green-500' : ''}">
+                                            ${lecture.name} (${lecture.duration} ${this.lang === 'ar' ? 'دقيقة' : 'min'})
+                                        </div>
+                                    `).join('')}
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    tableHTML += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    tableContainer.innerHTML = tableHTML;
+                },
+
+                getDayName(date) {
+                    return date.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US', { weekday: 'long' });
+                },
+
                 getTranslatedType(type) {
                     const translations = {
                         'arabic': { ar: 'عربي', en: 'Arabic' },
                         'physics': { ar: 'فيزياء', en: 'Physics' },
                         'chemistry': { ar: 'كيمياء', en: 'Chemistry' },
                         'biology': { ar: 'أحياء', en: 'Biology' },
-                        'french': { ar: 'فرنساوي', en: 'French' },
+                        'french': { ar: 'فرنساوي', en: 'French'
+ },
                         'math': { ar: 'رياضيات', en: 'Math' },
                         'english': { ar: 'إنجليزي', en: 'English' }
                     };
@@ -466,45 +491,24 @@
                     return colors[type] || '#6B7280';
                 },
 
-                setDailyTip() {
-                    const tips = {
-                        ar: [
-                            "خصص وقتًا للراحة بين جلسات الدراسة لتحسين التركيز.",
-                            "استخدم تقنية بومودورو: 25 دقيقة دراسة، 5 دقائق راحة.",
-                            "راجع ملاحظاتك بانتظام لترسيخ المعلومات في ذاكرتك.",
-                            "حاول شرح المفاهيم لزملائك لتعزيز فهمك.",
-                            "ابدأ بالمواد الأصعب عندما تكون طاقتك في أعلى مستوياتها.",
-                            "استخدم الخرائط الذهنية لتنظيم أفكارك ومراجعة المواد.",
-                            "تناول وجبات صحية ومتوازنة للحفاظ على تركيزك وطاقتك.",
-                            "مارس التمارين الرياضية بانتظام لتحسين الدورة الدموية وزيادة التركيز.",
-                            "اشرب الكثير من الماء أثناء الدراسة للحفاظ على نشاطك الذهني.",
-                            "حدد أهدافًا صغيرة وقابلة للتحقيق لكل جلسة دراسية."
-                        ],
-                        en: [
-                            "Take breaks between study sessions to improve focus.",
-                            "Use the Pomodoro technique: 25 minutes of study, 5 minutes of rest.",
-                            "Review your notes regularly to reinforce information in your memory.",
-                            "Try explaining concepts to your peers to enhance your understanding.",
-                            "Start with the most difficult subjects when your energy is at its peak.",
-                            "Use mind maps to organize your thoughts and review materials.",
-                            "Eat healthy, balanced meals to maintain your focus and energy.",
-                            "Exercise regularly to improve blood circulation and increase concentration.",
-                            "Drink plenty of water while studying to maintain mental alertness.",
-                            "Set small, achievable goals for each study session."
-                        ]
-                    };
-                    
-                    this.dailyTip = tips[this.lang][Math.floor(Math.random() * tips[this.lang].length)];
-                },
-
                 saveSettings() {
-                    const data = JSON.stringify({ lectures: this.lectures, schedule: this.schedule });
-                    const blob = new Blob([data], { type: 'application/json' });
+                    const settings = {
+                        darkMode: this.darkMode,
+                        lang: this.lang,
+                        lectures: this.lectures,
+                        schedule: this.schedule,
+                        studyDays: this.studyDays,
+                        dailyStudyHours: this.dailyStudyHours
+                    };
+                    const blob = new Blob([JSON.stringify(settings)], {type: "application/json"});
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'study_schedule_settings.json';
+                    a.download = 'study_planner_settings.json';
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                 },
 
                 loadSettings(event) {
@@ -512,54 +516,68 @@
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            const content = e.target.result;
-                            const data = JSON.parse(content);
-                            this.lectures = data.lectures || [];
-                            this.schedule = data.schedule || [];
-                            this.schedule.forEach(day => day.date = new Date(day.date));
-                            this.saveToCookies();
-                            this.updateStudyStats();
-                            this.updateSubjectsChart();
-                            this.updateProgressChart();
-                            this.updateCalendar();
+                            const settings = JSON.parse(e.target.result);
+                            this.darkMode = settings.darkMode;
+                            this.lang = settings.lang;
+                            this.lectures = settings.lectures;
+                            this.schedule = settings.schedule.map(day => ({
+                                ...day,
+                                date: new Date(day.date)
+                            }));
+                            this.studyDays = settings.studyDays;
+                            this.dailyStudyHours = settings.dailyStudyHours;
+                            this.saveToLocalStorage();
+                            this.init();
                         };
                         reader.readAsText(file);
                     }
                 },
 
                 downloadSchedule() {
-                    const scheduleText = this.schedule.map(day => {
-                        const dateStr = day.date.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US');
-                        const lecturesStr = day.lectures.map(lecture => 
-                            `- ${lecture.name} (${lecture.duration} ${this.lang === 'ar' ? 'دقيقة' : 'min'})`
-                        ).join('\n');
-                        return `${dateStr}:\n${lecturesStr}`;
-                    }).join('\n\n');
+                    let scheduleText = this.lang === 'ar' ? 'الجدول الدراسي\n\n' : 'Study Schedule\n\n';
+                    this.schedule.forEach(day => {
+                        scheduleText += `${this.getDayName(day.date)} - ${day.date.toLocaleDateString(this.lang === 'ar' ? 'ar-EG' : 'en-US')}\n`;
+                        day.lectures.forEach(lecture => {
+                            scheduleText += `  ${lecture.name} (${lecture.duration} ${this.lang === 'ar' ? 'دقيقة' : 'min'}) - ${lecture.completed ? (this.lang === 'ar' ? 'مكتمل' : 'Completed') : (this.lang === 'ar' ? 'غير مكتمل' : 'Not Completed')}\n`;
+                        });
+                        scheduleText += '\n';
+                    });
 
-                    const blob = new Blob([scheduleText], { type: 'text/plain' });
+                    const blob = new Blob([scheduleText], {type: "text/plain;charset=utf-8"});
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = 'study_schedule.txt';
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
                 },
 
-                saveToCookies() {
-                    Cookies.set('darkMode', JSON.stringify(this.darkMode), { expires: 365 });
-                    Cookies.set('lang', this.lang, { expires: 365 });
-                    Cookies.set('lectures', JSON.stringify(this.lectures), { expires: 365 });
-                    Cookies.set('schedule', JSON.stringify(this.schedule), { expires: 365 });
-                },
-
-                loadFromCookies() {
-                    this.darkMode = JSON.parse(Cookies.get('darkMode') || 'false');
-                    this.lang = Cookies.get('lang') || 'ar';
-                    this.lectures = JSON.parse(Cookies.get('lectures') || '[]');
-                    const savedSchedule = JSON.parse(Cookies.get('schedule') || '[]');
-                    this.schedule = savedSchedule.map(day => ({
-                        ...day,
-                        date: new Date(day.date)
+                saveToLocalStorage() {
+                    localStorage.setItem('studyPlannerSettings', JSON.stringify({
+                        darkMode: this.darkMode,
+                        lang: this.lang,
+                        lectures: this.lectures,
+                        schedule: this.schedule,
+                        studyDays: this.studyDays,
+                        dailyStudyHours: this.dailyStudyHours
                     }));
+                },
+
+                loadFromLocalStorage() {
+                    const savedSettings = JSON.parse(localStorage.getItem('studyPlannerSettings'));
+                    if (savedSettings) {
+                        this.darkMode = savedSettings.darkMode;
+                        this.lang = savedSettings.lang;
+                        this.lectures = savedSettings.lectures;
+                        this.schedule = savedSettings.schedule.map(day => ({
+                            ...day,
+                            date: new Date(day.date)
+                        }));
+                        this.studyDays = savedSettings.studyDays;
+                        this.dailyStudyHours = savedSettings.dailyStudyHours;
+                    }
                 }
             }
         }
